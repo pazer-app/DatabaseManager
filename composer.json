@@ -1,0 +1,14 @@
+{
+  "name": "pazer-app/database-manager",
+  "description": "Pazer.app / Database Manager",
+  "require": {
+    "php": ">=7.4",
+    "ext-mysqli": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Pazer\\DatabaseManager\\": "src/"
+    }
+  },
+  "license": "MIT"
+}
