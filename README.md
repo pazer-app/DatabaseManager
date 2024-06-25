@@ -1,1 +1,1 @@
-# Pazer - Database Manager
+# Pazer.app / Database Manager
