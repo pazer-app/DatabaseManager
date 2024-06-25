@@ -13,13 +13,19 @@ class DatabaseClient {
     public function state() : bool { return $this->state; }
     public function core() : ?mysqli { return $this->_client ?? null; }
     public function query(string $query, array $values) : ?mysqli_result {
-        $stmt = $this->_client->stmt_init();
-        $stmt->prepare($query);
-        if(sizeof($values) > 0) $stmt->bind_param($this->getStmtTypes($values),...$values);
-        $stmt->execute();
-        $data = $stmt->get_result() ?? null;
-        $stmt->close();
-        return $data ?? null;
+        try {
+            $stmt = $this->_client->stmt_init();
+            if(!$stmt->prepare($query)) throw new \Exception('Stmt Prepare Error');
+            if(sizeof($values) > 0) if(!$stmt->bind_param($this->getStmtTypes($values),...$values)) throw new \Exception('Stmt bind_param Error');
+            if(!$stmt->execute()) throw new \Exception('Stmt Execute Error');
+            $data = $stmt->get_result() ?? null;
+            @$stmt->close();
+            return $data ?? null;
+        }catch (\Exception $e){
+            $data = null;
+            @$stmt->close();
+            return null;
+        }
     }
     public function getStmtTypes(array $values) : string {
         $types = "";
