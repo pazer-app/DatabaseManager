@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Pazer\DatabaseManager;
+namespace PazerApp\DatabaseManager;
 class DatabaseManager {
     protected array $_host;
     public function __construct() { return $this->clear(); }
