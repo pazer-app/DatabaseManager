@@ -1,5 +1,5 @@
 <?php declare(strict_types=1);
-namespace Pazer\DatabaseManager;
+namespace PazerApp\DatabaseManager;
 use mysqli;
 use mysqli_result;
 class DatabaseClient {
