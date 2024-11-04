@@ -2,7 +2,6 @@
 namespace PazerApp\DatabaseManager;
 use mysqli;
 use mysqli_sql_exception;
-
 class DatabaseClient {
     protected DatabaseStructHost $_host;
     protected bool $_status;
@@ -10,20 +9,6 @@ class DatabaseClient {
     protected function clear() : self { $this->_host = new DatabaseStructHost(); $this->_status = false; return $this; }
     public function set_host(DatabaseStructHost $host) : self { $this->_host = $host; $this->_status = false; return $this; }
     public function get_host() : DatabaseStructHost { return $this->_host; }
-    public function query(string $query) : DatabaseStructFrom {
-        $form = new DatabaseStructFrom();
-        try {
-            $client = @new mysqli($this->_host->get_hostname(), $this->_host->get_username(), $this->_host->get_password(), $this->_host->get_database(), $this->_host->get_port());
-            if (!$client->connect_error) { $client->set_charset($this->_host->get_charset()); }
-            $dbq = $client->query($query);
-            $data = array();
-            while ($row = $dbq->fetch_assoc()) { $data[] = $row; }
-            $form->set_code(200)->set_message("OK")->set_data($data); @$client->close();
-        }catch (mysqli_sql_exception $e){
-            $form->set_code($e->getCode())->set_message($e->getMessage());
-        }
-        return $form;
-    }
     protected function _connect() {
         try {
             $client = new mysqli($this->_host->get_hostname(), $this->_host->get_username(), $this->_host->get_password(), $this->_host->get_database(), $this->_host->get_port());
@@ -50,7 +35,6 @@ class DatabaseClient {
                     ->clear()
                     ->set_execute(true)
                     ->set_code(200)
-                    ->set_message("Select completed")
                     ->set_count($res->num_rows)
                     ->set_data($data);
                     $stmt->close();
@@ -80,7 +64,6 @@ class DatabaseClient {
                     ->clear()
                     ->set_execute(true)
                     ->set_code(200)
-                    ->set_message("Select completed")
                     ->set_affected_rows($stmt->affected_rows)
                     ->set_insert_id($stmt->insert_id);
                 $stmt->close();
