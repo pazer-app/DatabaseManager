@@ -1,33 +1,102 @@
 <?php declare(strict_types=1);
 namespace PazerApp\DatabaseManager;
 use mysqli;
-use mysqli_result;
+use mysqli_sql_exception;
+
 class DatabaseClient {
-    protected bool $state = false;
     protected DatabaseStructHost $_host;
-    protected ?mysqli $_client;
-    public function __construct(DatabaseStructHost $hostInfo = null) { $this->_client = null; $this->clear(); if($hostInfo !== null) $this->_host = $hostInfo; return $this; }
-    public function clear() : self { $this->close(); $this->_host = new DatabaseStructHost(); return $this; }
-    public function connect() : self { $this->state = false; $this->_client = @new mysqli($this->_host->hostname(), $this->_host->username(), $this->_host->password(), $this->_host->database(), $this->_host->port()); if(!$this->_client->connect_error) { $this->state = true; $this->_client->set_charset($this->_host->charset()); } return $this; }
-    public function close() : self { if ($this->_client instanceof mysqli) { @$this->_client->close(); } $this->_client = null; $this->state = false; return $this; }
-    public function state() : bool { return $this->state; }
-    public function core() : ?mysqli { return $this->_client ?? null; }
-    public function query(string $query, array $values) : ?mysqli_result {
+    protected bool $_status;
+    public function __construct() { return $this->clear(); }
+    protected function clear() : self { $this->_host = new DatabaseStructHost(); $this->_status = false; return $this; }
+    public function set_host(DatabaseStructHost $host) : self { $this->_host = $host; $this->_status = false; return $this; }
+    public function get_host() : DatabaseStructHost { return $this->_host; }
+    public function query(string $query) : DatabaseStructFrom {
+        $form = new DatabaseStructFrom();
         try {
-            $stmt = $this->_client->stmt_init();
-            if(!$stmt->prepare($query)) throw new \Exception('Stmt Prepare Error');
-            if(sizeof($values) > 0) if(!$stmt->bind_param($this->getStmtTypes($values),...$values)) throw new \Exception('Stmt bind_param Error');
-            if(!$stmt->execute()) throw new \Exception('Stmt Execute Error');
-            $data = $stmt->get_result() ?? null;
-            @$stmt->close();
-            return $data ?? null;
-        }catch (\Exception $e){
-            $data = null;
-            @$stmt->close();
-            return null;
+            $client = @new mysqli($this->_host->get_hostname(), $this->_host->get_username(), $this->_host->get_password(), $this->_host->get_database(), $this->_host->get_port());
+            if (!$client->connect_error) { $client->set_charset($this->_host->get_charset()); }
+            $dbq = $client->query($query);
+            $data = array();
+            while ($row = $dbq->fetch_assoc()) { $data[] = $row; }
+            $form->set_code(200)->set_message("OK")->set_data($data); @$client->close();
+        }catch (mysqli_sql_exception $e){
+            $form->set_code($e->getCode())->set_message($e->getMessage());
+        }
+        return $form;
+    }
+    protected function _connect() {
+        try {
+            $client = new mysqli($this->_host->get_hostname(), $this->_host->get_username(), $this->_host->get_password(), $this->_host->get_database(), $this->_host->get_port());
+            if (!$client->connect_error) { $client->set_charset($this->_host->get_charset()); }
+            return $client;
+        }catch (mysqli_sql_exception $e) {
+            return array("code" => $e->getCode(), "message" => $e->getMessage());
         }
     }
-    public function getStmtTypes(array $values) : string {
+    public function read_query(string $query, array $value = array()) : DatabaseStructFrom {
+        $form = new DatabaseStructFrom();
+        $client = $this->_connect();
+        if(is_array($client)) $form->clear()->set_code($client["code"])->set_message($client['message']);
+        else{
+            try {
+                $data = array();
+                $stmt = $client->stmt_init();
+                $stmt->prepare($query);
+                if(sizeof($value) > 0) $stmt->bind_param($this->getStmtTypes($value),...$value);
+                $stmt->execute();
+                $res = $stmt->get_result();
+                while($row = $res->fetch_assoc()) $data[] = $row;
+                $form
+                    ->clear()
+                    ->set_execute(true)
+                    ->set_code(200)
+                    ->set_message("Select completed")
+                    ->set_count($res->num_rows)
+                    ->set_data($data);
+                    $stmt->close();
+                    $client->close();
+            }catch (mysqli_sql_exception $e){
+                $form
+                    ->clear()
+                    ->set_code($e->getCode())
+                    ->set_message($e->getMessage());
+                    $stmt->close();
+                    $client->close();
+            }
+        }
+        return $form;
+    }
+    public function write_query(string $query, array $value = array()) : DatabaseStructFrom {
+        $form = new DatabaseStructFrom();
+        $client = $this->_connect();
+        if(is_array($client)) $form->clear()->set_code($client["code"])->set_message($client['message']);
+        else{
+            try {
+                $stmt = $client->stmt_init();
+                $stmt->prepare($query);
+                if(sizeof($value) > 0) $stmt->bind_param($this->getStmtTypes($value),...$value);
+                $stmt->execute();
+                $form
+                    ->clear()
+                    ->set_execute(true)
+                    ->set_code(200)
+                    ->set_message("Select completed")
+                    ->set_affected_rows($stmt->affected_rows)
+                    ->set_insert_id($stmt->insert_id);
+                $stmt->close();
+                $client->close();
+            }catch (mysqli_sql_exception $e){
+                $form
+                    ->clear()
+                    ->set_code($e->getCode())
+                    ->set_message($e->getMessage());
+                $stmt->close();
+                $client->close();
+            }
+        }
+        return $form;
+    }
+    protected function getStmtTypes(array $values) : string {
         $types = "";
         foreach ($values as $value) {
             if(is_int($value)) $types.="i";

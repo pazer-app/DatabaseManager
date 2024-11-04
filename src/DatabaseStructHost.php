@@ -3,12 +3,23 @@ namespace PazerApp\DatabaseManager;
 class DatabaseStructHost {
     protected array $_data;
     public function __construct() { return $this->clear(); }
-    public function clear() : self { $this->_data = array("hostname" => "", "username" => "", "password" => "", "database" => "", "port" => "", "charset" => ""); return $this; }
-    public function setHostInfo(string $hostname, string $username, string $password, string $database, int $port = 3306, string $charset = "utf8mb4") : self { $this->_data['hostname'] = $hostname; $this->_data['username'] = $username; $this->_data['password'] = $password; $this->_data['database'] = $database; $this->_data['port'] = $port; $this->_data['charset'] = $charset; return $this; }
-    public function hostname() : string { return $this->_data[__FUNCTION__] ?? ""; }
-    public function username() : string { return $this->_data[__FUNCTION__] ?? ""; }
-    public function password() : string { return $this->_data[__FUNCTION__] ?? ""; }
-    public function database() : string { return $this->_data[__FUNCTION__] ?? ""; }
-    public function charset() : string { return $this->_data[__FUNCTION__] ?? ""; }
-    public function port() : int { return $this->_data[__FUNCTION__] ?? 3306; }
+    public function clear() : self { $this->_data = array("hostname" => "", "username" => "", "password" => "", "database" => "", "port" => 3306, "charset" => "utf8mb4"); return $this; }
+    public function toArray() : array { return $this->_data; }
+    public function toJSON() : string { return json_encode($this->toArray(), 256); }
+    protected function _getFuncName(string $name) : string { return mb_substr($name, 4); }
+    protected function _sets(string $name, $value) : self { $this->_data[$this->_getFuncName($name)] = $value; return $this; }
+    protected function _gets(string $name) { return $this->_data[$this->_getFuncName($name)]; }
+    public function set_hostname(string $hostname) : self { return $this->_sets(__FUNCTION__, $hostname); }
+    public function set_username(string $username) : self { return $this->_sets(__FUNCTION__, $username); }
+    public function set_password(string $password) : self { return $this->_sets(__FUNCTION__, $password); }
+    public function set_database(string $database) : self { return $this->_sets(__FUNCTION__, $database); }
+    public function set_port(int $port) : self { return $this->_sets(__FUNCTION__, $port); }
+    public function set_charset(string $charset) : self { return $this->_sets(__FUNCTION__, $charset); }
+    public function get_hostname() : string { return $this->_gets(__FUNCTION__); }
+    public function get_username() : string { return $this->_gets(__FUNCTION__); }
+    public function get_password() : string { return $this->_gets(__FUNCTION__); }
+    public function get_database() : string { return $this->_gets(__FUNCTION__); }
+    public function get_port() : int { return $this->_gets(__FUNCTION__); }
+    public function get_charset() : string { return $this->_gets(__FUNCTION__); }
+    public function client() : DatabaseClient { $client = new DatabaseClient(); $client->set_host($this); return $client; }
 }
