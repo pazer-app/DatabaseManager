@@ -44,7 +44,6 @@ class DatabaseClient {
                     ->clear()
                     ->set_code($e->getCode())
                     ->set_message($e->getMessage());
-                    $stmt->close();
                     $client->close();
             }
         }
@@ -73,7 +72,6 @@ class DatabaseClient {
                     ->clear()
                     ->set_code($e->getCode())
                     ->set_message($e->getMessage());
-                $stmt->close();
                 $client->close();
             }
         }
